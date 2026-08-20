@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\RreeAuthService;
 use App\Services\RreeRrhhService;
+use App\Services\PersonaSyncService;
 use Illuminate\Http\Request;
 
 class RreeTestController extends Controller
@@ -94,6 +95,67 @@ class RreeTestController extends Controller
                 'uniOrganizacionalID' => $jwt['UniOrganizacionalID'] ?? null,
             ],
             'persona' => $persona,
+        ]);
+    }
+    
+    public function syncUser(
+        Request $request,
+        RreeAuthService $rreeAuth,
+        RreeRrhhService $rreeRrhh,
+        PersonaSyncService $personaSync
+    ) {
+        $request->validate([
+            'usuario' => ['required', 'string'],
+            'contrasena' => ['required', 'string'],
+        ]);
+
+        // 1. Autenticar
+        $respuesta = $rreeAuth->signIn(
+            $request->usuario,
+            $request->contrasena,
+            'Personal',
+            $request->ip()
+        );
+
+        if (!$respuesta || empty($respuesta['token'])) {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'No fue posible autenticar con RREE.'
+            ], 401);
+        }
+
+        // 2. Decodificar JWT
+        $jwt = $rreeAuth->decodeJwt($respuesta['token']);
+
+        if (!$jwt || empty($jwt['nameid'])) {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'No se pudo obtener nameid.'
+            ], 401);
+        }
+
+        // 3. Consultar RRHH
+        $rrhhResponse = $rreeRrhh->getUserById(
+            (string) $jwt['nameid']
+        );
+
+        if (!$rrhhResponse || empty($rrhhResponse['objeto'])) {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'No fue posible obtener información de RRHH.'
+            ], 502);
+        }
+
+        // 4. Sincronizar persona y unidad organizacional
+        $persona = $personaSync->sincronizar(
+            $rrhhResponse['objeto'],
+            (string) $jwt['nameid']
+        );
+
+        return response()->json([
+            'ok' => true,
+            'mensaje' => 'Persona sincronizada correctamente.',
+            'persona' => $persona->load('unidadOrganizacional'),
         ]);
     }
 }
