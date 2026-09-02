@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Models\Poliza;
+use App\Policies\PolizaPolicy;
+use Illuminate\Support\Facades\Gate;
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +23,5 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
-    }
+Gate::policy(Poliza::class, PolizaPolicy::class);    }
 }

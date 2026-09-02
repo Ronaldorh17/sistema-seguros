@@ -64,18 +64,24 @@ class RreeLoginService
 
         // 5. Crear/actualizar usuario local
         $user = DB::transaction(function () use ($persona, $jwt, $usuario) {
-
+        
             return User::updateOrCreate(
                 [
                     'persona_id' => $persona->id,
                 ],
-                [
-                    'name' => $persona->nombre_completo,
-                    'email' => $usuario,
-                ]
+ [
+    'name' => $persona->nombre_completo,
+    'usuario_rree' => $usuario,
+]
             );
         });
-
+        if (!$user->hasAnyRole([
+    'SERVICIO_EXTERIOR',
+    'ACTIVOS_FIJOS',
+    'ADMINISTRADOR',
+])) {
+    $user->assignRole('SERVICIO_EXTERIOR');
+}
         // 6. Crear token Sanctum
         $token = $user->createToken(
             'sistema-seguros'
@@ -84,7 +90,8 @@ class RreeLoginService
         return [
             'token' => $token,
             'user' => $user->load(
-                'persona.unidadOrganizacional'
+                'persona.unidadOrganizacional',
+                'roles:id,name'
             ),
             'rree' => [
                 'nameid' => $nameid,

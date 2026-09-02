@@ -46,7 +46,8 @@ class AuthController extends Controller
         return response()->json([
             'ok' => true,
             'data' => $request->user()->load(
-                'persona.unidadOrganizacional'
+                'persona.unidadOrganizacional',
+                'roles:id,name'
             ),
         ]);
     }

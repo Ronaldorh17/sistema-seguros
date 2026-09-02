@@ -20,17 +20,19 @@ class DocumentoPoliza extends Model
         'created_by',
     ];
 
-    protected $casts = [
-        'tamano' => 'integer',
-    ];
-
     public function poliza(): BelongsTo
     {
-        return $this->belongsTo(Poliza::class);
+        return $this->belongsTo(
+            Poliza::class,
+            'poliza_id'
+        );
     }
 
-    public function creador(): BelongsTo
+    public function usuario(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(
+            User::class,
+            'created_by'
+        );
     }
 }
